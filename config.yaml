@@ -1,0 +1,45 @@
+# Configuration file for Pesticide Detection Project
+
+paths:
+  # Base directory for the entire dataset
+  dataset_root: dataset
+  # Directory where preprocessed data (train/val/test) is stored
+  processed_data: dataset/processed
+  # Directory for saving model files and checkpoints
+  models_dir: models/saved_models 
+  # Directory for training history plots and reports
+  output_dir: outputs
+
+data:
+  # Image dimensions (H, W) used for training/prediction
+  image_size: [224, 224]
+  # Batch size for training and validation
+  batch_size: 16
+  # Data split ratios (for preprocessing script)
+  split_ratios:
+    train: 0.8
+    validation: 0.1
+    test: 0.1
+  # Mapping from raw folder names (concentration levels) to binary labels
+  class_mapping:
+    0.1-0.8: clean
+    0.9-1.3: contaminated
+    1.4-1.7: contaminated
+  # Threshold for predicting 'contaminated' status in the web app (0.0 to 1.0)
+  confidence_threshold: 0.65 
+
+model:
+  # Model architecture to use: 'cnn', 'resnet', or 'efficientnet'
+  architecture: efficientnet 
+  # *** NEW KEY ADDED ***
+  model_filename: final_model.h5 # Specify the exact model file to load
+  # Number of output classes (2 for binary classification: clean, contaminated)
+  num_classes: 2
+  # Initial learning rate for the Adam optimizer
+  learning_rate: 0.0001 
+  # Number of epochs for training
+  epochs: 50 
+  # Early stopping patience
+  patience: 10
+  # Minimum delta for improvement monitoring
+  min_delta: 0.001
