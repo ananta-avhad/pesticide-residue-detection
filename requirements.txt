@@ -9,6 +9,7 @@ opencv-python-headless
 Pillow
 pyyaml
 h5py
+dicttoxml==1.7.16
 
 
 
