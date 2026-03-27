@@ -19,12 +19,12 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 #for test phone no.
-def test_insert():
+def save_user_phone(phone_number):
     try:
         data = {
-            "phone": "9999999999"
+            "phone": phone_number
         }
-        res = supabase.table("users").insert(data).execute()
+        supabase.table("users").insert(data).execute()
         return True, None
     except Exception as e:
         return False, str(e)
@@ -112,6 +112,23 @@ with st.sidebar:
         else:
             st.error("❌ Insert fail hua")
             st.code(error)
+    
+    # 
+    st.sidebar.header("📱 Register Phone")
+
+    phone = st.sidebar.text_input("Enter your phone number")
+
+    if st.sidebar.button("Register"):
+        if phone:
+            success, error = save_user_phone(phone)
+
+            if success:
+                st.sidebar.success("✅ Phone saved successfully!")
+            else:
+                st.sidebar.error("❌ Failed to save")
+                st.sidebar.code(error)
+        else:
+            st.sidebar.warning("⚠️ Please enter phone number")
         
     
     st.header("ℹ️ About")
