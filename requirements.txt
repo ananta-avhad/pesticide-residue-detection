@@ -11,6 +11,7 @@ pyyaml
 h5py
 dicttoxml==1.7.16
 supabase
+twilio==9.0.4
 
 
 
