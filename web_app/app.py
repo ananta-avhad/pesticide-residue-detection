@@ -9,6 +9,7 @@ import json
 import xml.etree.ElementTree as ET
 from dicttoxml import dicttoxml
 import tempfile # Using tempfile for safer handling
+from twilio.rest import Client
 
 #for cloud
 from supabase import create_client, Client
@@ -26,6 +27,28 @@ def save_user_phone(phone_number):
         }
         supabase.table("users").insert(data).execute()
         return True, None
+    except Exception as e:
+        return False, str(e)
+
+#for sms sending
+import os
+
+def send_sms(phone, message):
+    ACCOUNT_SID = os.getenv("TWILIO_SID")
+    AUTH_TOKEN = os.getenv("TWILIO_AUTH")
+    TWILIO_NUMBER = os.getenv("TWILIO_NUMBER")
+
+    try:
+        client = Client(ACCOUNT_SID, AUTH_TOKEN)
+
+        message = client.messages.create(
+            body=message,
+            from_=TWILIO_NUMBER,
+            to=phone
+        )
+
+        return True, message.sid
+
     except Exception as e:
         return False, str(e)
 
@@ -129,7 +152,20 @@ with st.sidebar:
                 st.sidebar.code(error)
         else:
             st.sidebar.warning("⚠️ Please enter phone number")
-        
+    
+    #
+    st.sidebar.header("📲 SMS Test")
+
+    test_phone = st.sidebar.text_input("Enter phone (+91...)")
+
+    if st.sidebar.button("Send Test SMS"):
+        success, res = send_sms(test_phone, "🔥 Test SMS from your ML app!")
+
+        if success:
+            st.sidebar.success("SMS sent!")
+        else:
+            st.sidebar.error("Failed")
+            st.sidebar.code(res)
     
     st.header("ℹ️ About")
     st.write("""
