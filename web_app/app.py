@@ -43,20 +43,22 @@ def test_insert():
 # for sms sending
 def send_sms(phone, message):
     try:
-        ACCOUNT_SID = st.secrets.get("TWILIO_SID", os.getenv("TWILIO_SID"))
-        AUTH_TOKEN = st.secrets.get("TWILIO_AUTH", os.getenv("TWILIO_AUTH"))
-        TWILIO_NUMBER = st.secrets.get("TWILIO_NUMBER", os.getenv("TWILIO_NUMBER"))
+        ACCOUNT_SID = st.secrets.get("TWILIO_SID")
+        AUTH_TOKEN = st.secrets.get("TWILIO_AUTH")
+        TWILIO_NUMBER = st.secrets.get("TWILIO_NUMBER")
 
-        # Using the aliased TwilioClient
+        if not ACCOUNT_SID or not AUTH_TOKEN or not TWILIO_NUMBER:
+            return False, "Twilio secrets missing"
+
         client = TwilioClient(ACCOUNT_SID, AUTH_TOKEN)
 
-        message = client.messages.create(
+        msg = client.messages.create(
             body=message,
             from_=TWILIO_NUMBER,
             to=phone
         )
 
-        return True, message.sid
+        return True, msg.sid
 
     except Exception as e:
         return False, str(e)
@@ -146,7 +148,7 @@ with st.sidebar:
     # --- FIX 1: Single unified input field for phone number ---
     phone = st.sidebar.text_input("Enter phone (+91...)")
 
-    col1, col2 = st.columns(2)
+    col1, col2 = st.sidebar.columns(2)
     
     # Register Button
     with col1:
@@ -281,7 +283,9 @@ if uploaded_file is not None:
                     
                     st.subheader("💡 Recommendations")
                     if is_contaminated and meets_threshold:
-                        st.warning("⚠️ High contamination risk detected. **Do not consume.** Further expert testing recommended.")
+                        if phone:
+                            send_sms(phone, "⚠️ ALERT: Food is contaminated. Do NOT consume!")
+                            st.warning("⚠️ High contamination risk detected. **Do not consume.** Further expert testing recommended.")
                     elif is_contaminated and not meets_threshold:
                         st.info("Possible contamination detected with low confidence. **Consider rinsing thoroughly and re-testing.**")
                     elif not is_contaminated and meets_threshold:
