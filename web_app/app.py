@@ -14,7 +14,7 @@ import tempfile # Using tempfile for safer handling
 from supabase import create_client, Client
 
 SUPABASE_URL = "https://melapyayciwcolroqtso.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lbGFweWF5Y2l3Y29scm9xdHNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1OTU0ODQsImV4cCI6MjA5MDE3MTQ4NH0.p7nXC6bMkVUBNjAuA2XIqzVjn2x5etxwInBFBelqc7ko"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lbGFweWF5Y2l3Y29scm9xdHNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1OTU0ODQsImV4cCI6MjA5MDE3MTQ4NH0.p7nXC6bMkVUBNjAuA2XIqzVjn2x5etxwInBFBelqc7k"
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
