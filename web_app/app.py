@@ -8,18 +8,23 @@ from datetime import datetime
 import json
 import xml.etree.ElementTree as ET
 from dicttoxml import dicttoxml
-import tempfile # Using tempfile for safer handling
-from twilio.rest import Client
+import tempfile 
 
-#for cloud
+# --- Fixed import conflict by aliasing Twilio's Client ---
+from twilio.rest import Client as TwilioClient
 from supabase import create_client, Client
 
-SUPABASE_URL = "https://melapyayciwcolroqtso.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lbGFweWF5Y2l3Y29scm9xdHNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1OTU0ODQsImV4cCI6MjA5MDE3MTQ4NH0.p7nXC6bMkVUBNjAuA2XIqzVjn2x5etxwInBFBelqc7k"
+# --- Securely loading secrets using Streamlit Secrets ---
+try:
+    SUPABASE_URL = st.secrets["SUPABASE_URL"]
+    SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+except KeyError:
+    st.error("Missing Supabase credentials. Please set them in your Streamlit secrets.")
+    st.stop()
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-#for test phone no.
+# for DB insertion
 def save_user_phone(phone_number):
     try:
         data = {
@@ -30,16 +35,20 @@ def save_user_phone(phone_number):
     except Exception as e:
         return False, str(e)
 
-#for sms sending
-import os
+# test DB insert function
+def test_insert():
+    # You can change this dummy number if needed
+    return save_user_phone("+911234567890")
 
+# for sms sending
 def send_sms(phone, message):
-    ACCOUNT_SID = os.getenv("TWILIO_SID")
-    AUTH_TOKEN = os.getenv("TWILIO_AUTH")
-    TWILIO_NUMBER = os.getenv("TWILIO_NUMBER")
-
     try:
-        client = Client(ACCOUNT_SID, AUTH_TOKEN)
+        ACCOUNT_SID = st.secrets.get("TWILIO_SID", os.getenv("TWILIO_SID"))
+        AUTH_TOKEN = st.secrets.get("TWILIO_AUTH", os.getenv("TWILIO_AUTH"))
+        TWILIO_NUMBER = st.secrets.get("TWILIO_NUMBER", os.getenv("TWILIO_NUMBER"))
+
+        # Using the aliased TwilioClient
+        client = TwilioClient(ACCOUNT_SID, AUTH_TOKEN)
 
         message = client.messages.create(
             body=message,
@@ -53,7 +62,6 @@ def send_sms(phone, message):
         return False, str(e)
 
 # Add parent directory to path
-# This is required to import modules from the 'src' directory
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.predict import PesticidePredictor
@@ -98,13 +106,11 @@ st.markdown("""
     .uncertain {
         background-color: #FFF3E0;
         border: 2px solid #FF9800;
-        /* --- NEW CSS ADDED HERE --- */
-        color: #333333; /* Dark gray for better contrast */
+        color: #333333; 
     }
     .uncertain h3, .uncertain p {
-        color: #333333; /* Ensure header and paragraph text are dark inside uncertain box */
+        color: #333333; 
     }
-    /* --- END NEW CSS --- */
 </style>
 """, unsafe_allow_html=True)
 
@@ -126,46 +132,48 @@ st.markdown('<p class="sub-header">Upload an image of fruits or vegetables to de
 # Sidebar
 with st.sidebar:
     
-    #for test phone no.
-    if st.button("Test DB Insert"):
+    # Optional test button
+    if st.button("Test DB Insert (Dummy)"):
         success, error = test_insert()
-        
         if success:
-            st.success("✅ Insert ho gaya!")
+            st.success("✅ Dummy Insert ho gaya!")
         else:
             st.error("❌ Insert fail hua")
             st.code(error)
     
-    # 
-    st.sidebar.header("📱 Register Phone")
-
-    phone = st.sidebar.text_input("Enter your phone number")
-
-    if st.sidebar.button("Register"):
-        if phone:
-            success, error = save_user_phone(phone)
-
-            if success:
-                st.sidebar.success("✅ Phone saved successfully!")
-            else:
-                st.sidebar.error("❌ Failed to save")
-                st.sidebar.code(error)
-        else:
-            st.sidebar.warning("⚠️ Please enter phone number")
+    st.sidebar.header("📱 Phone & Alerts")
     
-    #
-    st.sidebar.header("📲 SMS Test")
+    # --- FIX 1: Single unified input field for phone number ---
+    phone = st.sidebar.text_input("Enter phone (+91...)")
 
-    test_phone = st.sidebar.text_input("Enter phone (+91...)")
+    col1, col2 = st.columns(2)
+    
+    # Register Button
+    with col1:
+        if st.button("Register DB"):
+            if phone:
+                success, error = save_user_phone(phone)
+                if success:
+                    st.success("✅ Saved!")
+                else:
+                    st.error("❌ Failed")
+                    st.code(error)
+            else:
+                st.warning("⚠️ Enter phone")
 
-    if st.sidebar.button("Send Test SMS"):
-        success, res = send_sms(test_phone, "🔥 Test SMS from your ML app!")
-
-        if success:
-            st.sidebar.success("SMS sent!")
-        else:
-            st.sidebar.error("Failed")
-            st.sidebar.code(res)
+    # SMS Button
+    with col2:
+        if st.button("Send SMS"):
+            # --- FIX 2: Added validation so it doesn't run if empty ---
+            if phone:
+                success, res = send_sms(phone, "🔥 Test SMS from your ML app!")
+                if success:
+                    st.success("✅ SMS sent!")
+                else:
+                    st.error("❌ Failed")
+                    st.code(res)
+            else:
+                st.warning("⚠️ Enter phone")
     
     st.header("ℹ️ About")
     st.write("""
@@ -204,45 +212,35 @@ uploaded_file = st.file_uploader(
 )
 
 if uploaded_file is not None:
-    # Create columns for layout
     col1, col2 = st.columns(2)
     
-    # Use a temporary directory for safer file handling
     with tempfile.TemporaryDirectory() as tmpdir:
         
-        # Determine the file extension
         file_extension = os.path.splitext(uploaded_file.name)[1]
         if not file_extension:
-            file_extension = ".jpg" # Default if none found
+            file_extension = ".jpg" 
 
-        # Create a unique temporary path
         temp_path = os.path.join(tmpdir, "uploaded_image" + file_extension)
         
-        # Write the uploaded file content to the temporary path
         with open(temp_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
         
-        # Display Image
         with col1:
             st.subheader("📷 Uploaded Image")
             image = Image.open(temp_path)
             st.image(image, caption=uploaded_file.name) 
         
-        # Run Analysis
         with col2:
             st.subheader("🔍 Analysis Results")
             
             with st.spinner("Analyzing image..."):
                 try:
-                    # Make prediction using the temporary file path
                     result = st.session_state.predictor.process_image(temp_path)
                     
-                    # Extract and format results
                     is_contaminated = result.get('is_contaminated', False)
                     confidence = result.get('confidence', 0.0)
                     meets_threshold = result.get('meets_confidence_threshold', False)
                     
-                    # Determine result type for styling and status message
                     if is_contaminated:
                         if meets_threshold:
                             result_class = "contaminated"
@@ -266,7 +264,6 @@ if uploaded_file is not None:
                             status = "UNCERTAIN RESULT"
                             color = "#FF9800"
                             
-                    # Display result box
                     st.markdown(f"""
                     <div class="result-box {result_class}">
                         <h2 style="color: {color};">{icon} {status}</h2>
@@ -275,7 +272,6 @@ if uploaded_file is not None:
                     </div>
                     """, unsafe_allow_html=True)
                     
-                    # Show probabilities
                     if show_probabilities:
                         st.subheader("📊 Probability Breakdown")
                         prob_data = result['probabilities']
@@ -283,7 +279,6 @@ if uploaded_file is not None:
                         for class_name, prob in prob_data.items():
                             st.progress(min(1.0, max(0.0, float(prob))), text=f"**{class_name.capitalize()}** probability: **{prob:.1%}**")
                     
-                    # Recommendations
                     st.subheader("💡 Recommendations")
                     if is_contaminated and meets_threshold:
                         st.warning("⚠️ High contamination risk detected. **Do not consume.** Further expert testing recommended.")
@@ -291,20 +286,17 @@ if uploaded_file is not None:
                         st.info("Possible contamination detected with low confidence. **Consider rinsing thoroughly and re-testing.**")
                     elif not is_contaminated and meets_threshold:
                         st.success("✅ No contamination detected. Product appears safe.")
-                    else: # Uncertain/Low Confidence Safe
+                    else: 
                         st.info("Result uncertain. **Consider retesting or verifying source.**")
                     
-                    # Download reports
                     st.subheader("📥 Download Reports")
                     
-                    # Setup paths and unique names
                     base_name = os.path.splitext(uploaded_file.name)[0]
                     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                     output_base = f"{base_name}_{timestamp}"
 
                     col_txt, col_json, col_xml = st.columns(3)
                     
-                    # Generate reports data
                     report_data = {
                         "filename": uploaded_file.name,
                         "timestamp": timestamp,
@@ -314,7 +306,6 @@ if uploaded_file is not None:
                         "probabilities": result['probabilities']
                     }
 
-                    # TXT Report
                     txt_content = st.session_state.predictor.generate_txt_report(result)
                     with col_txt:
                         st.download_button(
@@ -324,7 +315,6 @@ if uploaded_file is not None:
                             mime="text/plain"
                         )
                     
-                    # JSON Report
                     json_content = st.session_state.predictor.generate_json_report(result)
                     with col_json:
                         st.download_button(
@@ -334,7 +324,6 @@ if uploaded_file is not None:
                             mime="application/json"
                         )
                     
-                    # XML Report
                     xml_content = st.session_state.predictor.generate_xml_report(result)
                     with col_xml:
                         st.download_button(
@@ -345,13 +334,11 @@ if uploaded_file is not None:
                         )
                     
                 except Exception as e:
-                    # Display the specific error that predict.py raised
                     st.error(f"Error during prediction or report generation. Please check the `src/predict.py` file.")
                     st.caption("Detailed error for debugging:")
                     st.code(f"{type(e).__name__}: {e}", language='python')
                     
 else:
-    # Show demo instructions when no file is uploaded
     st.info("👆 Please upload an image to begin analysis")
     
     st.subheader("📝 Supported Features")
@@ -369,11 +356,9 @@ else:
         st.write("📊 **Detailed Reports**")
         st.write("TXT, XML, JSON formats")
 
-# Footer
 st.markdown("---")
 st.markdown("""
 <div style="text-align: center; color: #666; padding: 2rem;">
     <p><strong>Pesticide Residue Detection System v1.0</strong></p>
 </div>
 """, unsafe_allow_html=True)
-
