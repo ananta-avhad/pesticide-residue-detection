@@ -25,10 +25,9 @@ def test_insert():
             "phone": "9999999999"
         }
         res = supabase.table("users").insert(data).execute()
-        return True
+        return True, None
     except Exception as e:
-        print("Error:", e)
-        return False
+        return False, str(e)
 
 # Add parent directory to path
 # This is required to import modules from the 'src' directory
@@ -105,14 +104,15 @@ st.markdown('<p class="sub-header">Upload an image of fruits or vegetables to de
 with st.sidebar:
     
     #for test phone no.
-    st.header("📱 DB Test")
-
     if st.button("Test DB Insert"):
-        if test_insert():
+        success, error = test_insert()
+        
+        if success:
             st.success("✅ Insert ho gaya!")
         else:
             st.error("❌ Insert fail hua")
-    
+            st.code(error)
+        
     
     st.header("ℹ️ About")
     st.write("""
