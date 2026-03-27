@@ -10,6 +10,26 @@ import xml.etree.ElementTree as ET
 from dicttoxml import dicttoxml
 import tempfile # Using tempfile for safer handling
 
+#for cloud
+from supabase import create_client, Client
+
+SUPABASE_URL = "https://melapyayciwcolroqtso.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lbGFweWF5Y2l3Y29scm9xdHNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1OTU0ODQsImV4cCI6MjA5MDE3MTQ4NH0.p7nXC6bMkVUBNjAuA2XIqzVjn2x5etxwInBFBelqc7ko"
+
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+#for test phone no.
+def test_insert():
+    try:
+        data = {
+            "phone": "9999999999"
+        }
+        res = supabase.table("users").insert(data).execute()
+        return True
+    except Exception as e:
+        print("Error:", e)
+        return False
+
 # Add parent directory to path
 # This is required to import modules from the 'src' directory
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -83,6 +103,17 @@ st.markdown('<p class="sub-header">Upload an image of fruits or vegetables to de
 
 # Sidebar
 with st.sidebar:
+    
+    #for test phone no.
+    st.header("📱 DB Test")
+
+    if st.button("Test DB Insert"):
+        if test_insert():
+            st.success("✅ Insert ho gaya!")
+        else:
+            st.error("❌ Insert fail hua")
+    
+    
     st.header("ℹ️ About")
     st.write("""
     This application uses machine learning to detect pesticide residues on fruits and vegetables.
@@ -292,3 +323,4 @@ st.markdown("""
     <p><strong>Pesticide Residue Detection System v1.0</strong></p>
 </div>
 """, unsafe_allow_html=True)
+
