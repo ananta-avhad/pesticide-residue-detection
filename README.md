@@ -217,14 +217,3 @@ With proper labeled data (500+ images):
 - [ ] Improve model accuracy
 - [ ] Deploy web interface
 
-## 🤝 Contributing
-
-This is a learning project. Feel free to modify and experiment!
-
-## 📄 License
-
-Educational use only
-
----
-
-**Good Luck with Your Project! 🚀**
